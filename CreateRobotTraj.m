@@ -1,3 +1,5 @@
+%%Create a trajectory with the help of splines that connect points defined by the user
+
 RobotAndSensorDefinition ;
 
 axis([0 1000 0 1000])
