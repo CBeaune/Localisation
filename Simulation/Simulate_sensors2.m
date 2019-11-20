@@ -19,7 +19,7 @@ qR        = interp1 (tq, qRight, treal) ;
 qL        = interp1 (tq, qLeft , treal) ;
 xreal     = interp1 (tq, xq    , treal) ;
 yreal     = interp1 (tq, yq    , treal) ;
-thetareal = interp1 (tq, thetaq, treal) ;
+thetareal = interp1 (tq, thetaq(1:size(tq)), treal) ; %truandage because thetaq is of wrong size
 
 % Apply quantization noise on encoder values based on resolution
 qR = round(qR*rad2dots)*dots2rad ;
@@ -52,7 +52,7 @@ for i = 1 : nbSamples
 	%checkboard floor
         % sensorState(i,j) = ~rem( floor(xs/xSpacing)+floor(ys/ySpacing) , 2 ) ;
 	%sqaure floor with lines
-        sensorState(i,j) = abs( floor(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - xy )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - ys )<hwidth;
+        sensorState(i,j) = abs( floor(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - ys )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - ys )<hwidth;
     end
 end
 
