@@ -12,24 +12,15 @@
 
 % Robot characteristics
 
-r
+rwheel           =  21.5 ;      % Wheel radius (mm)
 
-wheel           =  21.5 ;      
-% Wheel radius (mm)
+trackGauge       = 112   ;      % Distance between the fixed wheels (mm)
 
-
-trackGauge       = 112   ;      
-% Distance between the fixed wheels (mm)
-
-
-encoderRes       = 180   ;      
-% In dots per wheel rotation
+encoderRes       = 180   ;      % In dots per wheel rotation
 
 
 samplingFrequency    = 20 ;
-
 samplingPeriod       = 1/samplingFrequency ;
-
 
 topRobotSpeed = 100 ;
 
@@ -55,8 +46,6 @@ xSpacing = 50 ;
 ySpacing = 50 ;
 
 width = 4;
-hwidth = width/2;
-
 
 
 % ---------------------------------------------------------------
@@ -65,7 +54,7 @@ hwidth = width/2;
 
 % ---------------------------------------------------------------
 
-
+hwidth = width/2;
 
 dots2rad = (2*pi)/encoderRes ;
 
