@@ -51,7 +51,7 @@ for i = 1 : nbSamples
 
 	%checkboard floor
         % sensorState(i,j) = ~rem( floor(xs/xSpacing)+floor(ys/ySpacing) , 2 ) ;
-	%sqaure floor with lines
+	%square floor with lines
         sensorState(i,j) = abs( floor(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - ys )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - ys )<hwidth;
     end
 end
