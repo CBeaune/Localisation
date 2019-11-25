@@ -1,4 +1,4 @@
-RobotAndSensorDefinition ;
+RobotAndSensorDefinition2 ;
 
 %Load the data file
 dataFile = uigetfile('data/*.*','Select data file') ;
