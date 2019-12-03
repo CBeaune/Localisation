@@ -5,8 +5,9 @@
 % Figure 1: 
 %   - The path calculated by odometry only (red).
 %   - The path estimated by the Kalman filter (blue).
+%   - The real path (green).
 %   - The locations of the magnets which have been detected (black dots).
-%   - The estimated locations of the detected magnets in absolute frame
+%   - The estimated locations of the detected line in absolute frame
 %       using the measurement (that's variable oMeasMagnet in the program).
 % Figure 2: 
 %   - Speed and rotation speed, as estimated using the encoders.
@@ -16,24 +17,23 @@
 % Figure 4: 
 %   - Estimated error standard deviations in robot frame.
 % Figure 5: 
-%   - Mahalanobis distances calculated with the magnet closest to 
-%       the measurement point (candidate magnet) in blue.
-%   - Mahalanobis distances calculated with the four nearest neighbors 
-%       of the candidate magnet in red.
+%   - Mahalanobis distances calculated with the line closest to 
+%       the measurement point (candidate line) in blue.
+%   - Mahalanobis distances calculated with the four nearest neighbor 
+%       lines of candidate line (2 with the same orientatin and 2 with a different orientation )in red.
 %   - Mahalanobis distance threshold used in the program (black line).
 % Figure 6: 
 %   - Estimated x, y, theta as functions of time.
 % Figure 7:
-%   - Number of magnets detected at each time instant.
+%   - Number of sensor on a line at each time instant.
 % Figure 8:
 %   - Raw sensor measurements as a function of the curvilinear abscissa
 %       (distance traveled by point M). The vertical axis represents the
-%       state of each Reed sensor. A vertical line indicates a closed 
-%       sensor (a sensor which detects a magnet).
+%       state of each sensor. A vertical line indicates a closed 
+%       sensor (a sensor which detects a line).
 %   - You may comment out this graph when you don't need it anymore 
 %       (when you're done estimating the measurement noise).
 
-function PlotResults
 
 % Load the inputs to the problem (robot charateristics + tuning +
 % speed and rotation speed + measurements. They have been saved by
@@ -49,16 +49,16 @@ if ~exist('log.txt','file')
 end
 
 load inputLog ...
-     nbReedSensors samplingPeriod xSpacing ySpacing  ...
-     sensorReadings Qgamma mahaThreshold
+     nbSensors samplingPeriod xSpacing ySpacing  ...
+     sensorState Qgamma mahaThreshold
 
  
 % Load the results calculated by MagnetLoc, logged in log.txt.
 fid = fopen('log.txt','r');
 firstline = fgetl(fid) ;
-numvars = numel(strread(firstline,'%s')); %#ok<DSTRRD>
+numvars = numel(strread(firstline,'%s')); % #ok<DSTRRD>
 fgetl(fid); %<-- Skip the second line
-data = textscan(fid,repmat('%f',1,numvars)); %#ok<NASGU>
+data = textscan(fid,repmat('%f',1,numvars)); % #ok<NASGU>
 % The "unused variable" warning has been suppressed: variable "data" is
 % used in the "eval" instruction, but code analyzer does not see it.
 
@@ -84,8 +84,8 @@ tOdo = t(find(calcPhase==1));
 % and the magnets closest to these measured positions for display. 
 % Do this only when calcPhase = 2 (measurement).
 nbMeasurementPhases = sum(calcPhase==2) ;
-estMagnetPos   = zeros(2,nbMeasurementPhases) ;
-exactMagnetPos = zeros(2,nbMeasurementPhases) ;
+estLinePos   = zeros(2,nbMeasurementPhases) ;
+exactLinePos = zeros(2,nbMeasurementPhases) ;
 j = 0 ;
 for i = 1 : nbRes 
     if calcPhase(i) == 2
@@ -104,15 +104,15 @@ for i = 1 : nbRes
             oEstimatedSensorNormalized(2)=1-oEstimatedSensorNormalized(2);
         end
             
-         if oMeasSensorNormalized(1)<oMeasSensorNormalized(2) %une verticale est plus proche qu'une horizontale 
+         if oEstimatedSensorNormalized(1)<oEstimatedSensorNormalized(2) %une verticale est plus proche qu'une horizontale 
             oExactMagnetPos  = round( oEstimatedMagnet ./ [xSpacing ; 1 ; 1] ) .* [xSpacing ; 1 ; 1] ;
          else 
             oExactMagnetPos  = round( oEstimatedMagnet ./ [1 ; ySpacing ; 1] ) .* [1 ; ySpacing ; 1] ;
          end
          
             
-        estMagnetPos(:,j)   = oEstimatedMagnet(1:2) ;
-        exactMagnetPos(:,j) = oExactMagnetPos(1:2)  ;
+        estLinePos(:,j)   = oEstimatedMagnet(1:2) ;
+        exactLinePos(:,j) = oExactMagnetPos(1:2)  ;
     end
 end
 
@@ -135,17 +135,27 @@ figure;
 plot( Xodo(1,:), Xodo(2,:) , 'r' , 'LineWidth', 2 ) ;
 hold on ;
 plot( x,y , 'b' , 'LineWidth', 2 ) ;
+hold on ;
+plot( xreal,yreal , 'k' , 'LineWidth', 1 ) ;
 zoom on ; grid on; axis('equal');
-title('Estimated path EKF (blue) and odometry (red)');
+title('Real path (black), estimated path EKF (blue) and odometry (red)');
 xlabel('x (mm)');
 ylabel('y (mm)');
 
 % On top of the path, indicate estimated and real magnet positions.
 
 hold on;
-plot( estMagnetPos(1,:), estMagnetPos(2,:) , 'g+' ) ;
+plot( estLinePos(1,:), estLinePos(2,:) , 'g+' ) ;
 hold on;
-plot( exactMagnetPos(1,:), exactMagnetPos(2,:) , 'k.' ) ;
+plot( exactLinePos(1,:), exactLinePos(2,:) , 'k+' ) ;
+hold on
+for i = 1 : length(exactLinePos(1,:))
+    if mod(exactLinePos(1,i),xSpacing)==0
+        plot( ones(1,1000)*exactLinePos(1,i),linspace(0,1000,1000) , 'k--' , 'LineWidth', 0.3 );
+    else
+        plot(linspace(0,1000,1000),ones(1,1000)*exactLinePos(2,i) , 'k--' , 'LineWidth', 0.3 );
+    end
+end
 
 % Plot odometry-estimated speed and rotation speed
 
@@ -263,10 +273,10 @@ xlabel('t (s)') ;
 ylabel('sigma_{theta} (deg.)');
 zoom on ; grid on;
 
-% Calculate Mahalanobis distances, including for magnets that are the 
-% closest neighbors of the magnet closest to measurement point.   
+% Calculate Mahalanobis distances, including for lines that are the 
+% closest neighbors of the line closest to measurement point.   
 
-tMagnetDetection = zeros(1,sum(calcPhase==2)) ;
+tLineDetection = zeros(1,sum(calcPhase==2)) ;
 dMahaAll = zeros(5,sum(calcPhase==2)) ;
 j = 0 ;
 for i = 1 : length(t) 
@@ -276,78 +286,128 @@ for i = 1 : length(t)
     end
      
     j = j+1 ;
-    tMagnetDetection(j) = t(i) ;
+    tLineDetection(j) = t(i) ;
     
     % Calculate homogeneous transform of the robot with respect to the world frame
     oTm = [ cos(theta(i)) , -sin(theta(i)) , x(i)  ;
             sin(theta(i)) ,  cos(theta(i)) , y(i)  ;
                   0       ,        0       ,  1    ] ;
     
-    % Measurement vector: coordinates of the magnet measured in Rm.
-    Y = [ y1(i) ; y2(i) ] ;
-    
-    % Now in homogeneous coordinates for calculations.
-    mMeasMagnet = [ Y ; 1 ] ;
+    % Measurement vector in homogeneous coordinates for calculations.  The
+    % measurement vector hould be a scalar
+    mMeasSensor = [ y1(i) ; y2(i) ; 1 ] ;
     
     % Corresponding position in absolute frame
-    oMeasMagnet = oTm * mMeasMagnet ;
+    oMeasSensor = oTm * mMeasSensor ;
     
-    % Which actual magnet is closest to the estimated position?
-        oMeasMagnetNormalized=oMeasMagnet./[xSpacing;ySpacing;1];
-        oMeasMagnetNormalized=mod(oMeasMagnetNormalized,[1,1,1]);
-        if oMeasMagnetNormalized(1)>0.5
-            oMeasMagnetNormalized(1)=1-oMeasMagnetNormalized(1);
-        end
-        if oMeasMagnetNormalized(2) >0.5
-            oMeasMagnetNormalized(2)=1-oMeasMagnetNormalized(2);
-        end
-            
-         if oMeasMagnetNormalized(1)<oMeasMagnetNormalized(2) %une verticale est plus proche qu'une horizontale 
-            oRealMagnet  = round( oMeasMagnet ./ [xSpacing ; 1 ; 1] ) .* [xSpacing ; 1 ; 1] ;
-         else 
-            oRealMagnet  = round( oMeasMagnet ./ [1 ; ySpacing ; 1] ) .* [1 ; ySpacing ; 1] ;
-         end
-    
-    % The position of the real magnet in robot frame
-    mRealMagnet = oTm \ oRealMagnet ; % That's inv(oTm)*oRealMagnet
-    
-    % The expected measurement are the two coordinates of the real
-    % magnet in the robot frame.
-    Yhat = mRealMagnet(1:2) ;
-    
-    C = [ -cos(theta(i)) , -sin(theta(i)) , -sin(theta(i))*(oRealMagnet(1)-x(i))+cos(theta(i))*(oRealMagnet(2)-y(i)) ;
-           sin(theta(i)) , -cos(theta(i))   -sin(theta(i))*(oRealMagnet(2)-y(i))-cos(theta(i))*(oRealMagnet(1)-x(i)) ] ;
-    
-    innov = Y - Yhat ;
-    P = [ P11(i)  ,  P12(i)  ,  P13(i)  ;
-          P12(i)  ,  P22(i)  ,  P23(i)  ;
-          P13(i)  ,  P23(i)  ,  P33(i)  ] ;
-    dMaha = sqrt( innov.' / ( C*P*C.' + Qgamma) * innov ) ;
-          
-    dMahaAll(1,j)       = dMaha            ;
-    estMagnetPos(:,j)   = oMeasMagnet(1:2) ;
-    exactMagnetPos(:,j) = oRealMagnet(1:2) ;
-
-    % Offset vectors to generate the neighbors, in homogeneous coordinates.
-
-    deltas = [ xSpacing  -xSpacing      0           0       ;
-                  0          0       ySpacing   -ySpacing   ;
-                  0          0          0           0       ] ;
-
-    for neighborIndex = 1 : 4
-        oPneighbor = oRealMagnet + deltas(:,neighborIndex) ;
-
-        % The position of the magnet in robot frame is the expected measurement
-        % YhatNeighbor
-        YhatNeighbor = oTm \ oPneighbor ; % That's inv(oTm)*oPneighbor
-
-        Cneighbor = [ -cos(theta(i)) , -sin(theta(i)) , -sin(theta(i))*(oPneighbor(1)-x(i))+cos(theta(i))*(oPneighbor(2)-y(i)) ;
-                       sin(theta(i)) , -cos(theta(i)) , -sin(theta(i))*(oPneighbor(2)-y(i))-cos(theta(i))*(oPneighbor(1)-x(i)) ] ;
-
-        innovNeighbor = Y(1:2) - YhatNeighbor(1:2) ;    % Not in homogeneous coordinates.
-        dMahaNeighbor = sqrt( innovNeighbor.' / ( Cneighbor*P*Cneighbor.' + Qgamma) * innovNeighbor ) ;
-        dMahaAll(neighborIndex+1,j) = dMahaNeighbor ;
+    % Which actual line is closest to the estimated position?
+    oMeasSensorNormalized=oMeasSensor./[xSpacing;ySpacing;1];
+    oMeasSensorNormalized=mod(oMeasSensorNormalized,[1,1,1]);
+    if oMeasSensorNormalized(1)>0.5
+        oMeasSensorNormalized(1)=1-oMeasSensorNormalized(1);
     end
+    if oMeasSensorNormalized(2) >0.5
+        oMeasSensorNormalized(2)=1-oMeasSensorNormalized(2);
+    end
+
+     if oMeasSensorNormalized(1)<oMeasSensorNormalized(2) %une verticale est plus proche qu'une horizontale 
+        oRealSensor  = round( oMeasSensor ./ [xSpacing ; 1 ; 1] ) .* [xSpacing ; 1 ; 1] ;
+            
+        % The position of the real magnet in robot frame
+        mRealMagnet = oTm \ oRealSensor ; % That's inv(oTm)*oRealMagnet
+        
+        %Measuerment vector
+        Y=mMeasSensor(1:2); %we need both coordinates because even if candidate line is vertical, neighbor line could be vertical or horizontal
+        % The expected measurement are the two coordinates of the real
+        % magnet in the robot frame.
+        Yhat = mRealSensor(1) ;
+        C = [ 1 0 -mMeasSensor(1)*sin(theta(i))-mMeasSensor(2)*cos(theta(i))];
+
+        innov = Y(1) - Yhat ;
+        P = [ P11(i)  ,  P12(i)  ,  P13(i)  ;
+              P12(i)  ,  P22(i)  ,  P23(i)  ;
+              P13(i)  ,  P23(i)  ,  P33(i)  ] ;
+        dMaha = abs(innov) * sqrt( 1 / ( C*P*C.' + QgammaX) ) ;
+
+        dMahaAll(1,j)       = dMaha            ;
+        estLinePos(:,j)   = oMeasSensor(1:2) ;
+        exactLinePos(:,j) = oRealSensor(1:2) ;
+
+        % Offset vectors to generate the neighbors, in homogeneous coordinates.
+
+        deltas = [ xSpacing  -xSpacing      0           0       ;
+                      0          0       ceil(y(i)/ySpacing)*ySpacing-y(i)   -floor(y(i)/ySpacing)*ySpacing+y(i)   ;
+                      0          0          0           0       ] ;
+
+        for neighborIndex = 1 : 4
+            oPneighbor = oRealSensor + deltas(:,neighborIndex) ;
+
+            % The position of the line in robot frame is the expected measurement
+            if neighborIndex<=2 % vertical neighbors
+                YhatNeighbor = oTm \ oPneighbor ; % That's inv(oTm)*oPneighbor
+                CNeighbor = [ 1 0 -mMeasSensor(1)*sin(theta(i))-mMeasSensor(2)*cos(theta(i))];
+                innovNeighbor = Y(1) - YhatNeighbor(1) ;    % Not in homogeneous coordinates.
+                dMahaNeighbor = abs(innovNeighbor) * sqrt( 1 / ( CNeighbor*P*CNeighbor.' + QgammaX) ) ;
+                dMahaAll(neighborIndex+1,j) = dMahaNeighbor ;
+                
+            else %horizontal neighbors
+                YhatNeighbor = oTm \ oPneighbor ; % That's inv(oTm)*oPneighbor
+                CNeighbor = [ 0 1 mMeasSensor(1)*cos(theta(i))-mMeasSensor(2)*sin(theta(i))];
+                innovNeighbor = Y(2) - YhatNeighbor(2) ;    % Not in homogeneous coordinates.
+                dMahaNeighbor = abs(innovNeighbor) * sqrt( 1 / ( CNeighbor*P*CNeighbor.' + QgammaY) ) ;
+                dMahaAll(neighborIndex+1,j) = dMahaNeighbor ;
+            end
+        end
+        
+     else %closest is horizontal
+        oRealSensor  = round( oMeasSensor ./ [ySpacing ; 1 ; 1] ) .* [ySpacing ; 1 ; 1] ;
+            
+        % The position of the real magnet in robot frame
+        mRealMagnet = oTm \ oRealSensor ; % That's inv(oTm)*oRealMagnet
+        
+        %Measuerment vector
+        Y=mMeasSensor(1:2); %we need both coordinates because even if candidate line is vertical, neighbor line could be vertical or horizontal
+        % The expected measurement are the two coordinates of the real
+        % magnet in the robot frame.
+        Yhat = mRealSensor(2) ;
+        C = [ 0 1 mMeasSensor(1)*cos(theta(i))-mMeasSensor(2)*sin(theta(i))];
+
+        innov = Y(2) - Yhat ;
+        P = [ P11(i)  ,  P12(i)  ,  P13(i)  ;
+              P12(i)  ,  P22(i)  ,  P23(i)  ;
+              P13(i)  ,  P23(i)  ,  P33(i)  ] ;
+        dMaha = abs(innov) * sqrt( 1 / ( C*P*C.' + QgammaY) ) ;
+
+        dMahaAll(1,j)       = dMaha            ;
+        estLinePos(:,j)   = oMeasSensor(1:2) ;
+        exactLinePos(:,j) = oRealSensor(1:2) ;
+
+        % Offset vectors to generate the neighbors, in homogeneous coordinates.
+
+        deltas = [ ceil(x(i)/xSpacing)*xSpacing-x(i)  -floor(x(i)/xSpacing)*xSpacing+x(i)      0           0       ;
+                      0          0       ySpacing   -ySpacing   ;
+                      0          0          0           0       ] ;
+
+        for neighborIndex = 1 : 4
+            oPneighbor = oRealSensor + deltas(:,neighborIndex) ;
+
+            % The position of the line in robot frame is the expected measurement
+            if neighborIndex<=2 % vertical neighbors
+                YhatNeighbor = oTm \ oPneighbor ; % That's inv(oTm)*oPneighbor
+                CNeighbor = [ 1 0 -mMeasSensor(1)*sin(theta(i))-mMeasSensor(2)*cos(theta(i))];
+                innovNeighbor = Y(1) - YhatNeighbor(1) ;    % Not in homogeneous coordinates.
+                dMahaNeighbor = abs(innovNeighbor) * sqrt( 1 / ( CNeighbor*P*CNeighbor.' + QgammaX) ) ;
+                dMahaAll(neighborIndex+1,j) = dMahaNeighbor ;
+                
+            else %horizontal neighbors
+                YhatNeighbor = oTm \ oPneighbor ; % That's inv(oTm)*oPneighbor
+                CNeighbor = [ 0 1 mMeasSensor(1)*cos(theta(i))-mMeasSensor(2)*sin(theta(i))];
+                innovNeighbor = Y(2) - YhatNeighbor(2) ;    % Not in homogeneous coordinates.
+                dMahaNeighbor = abs(innovNeighbor) * sqrt( 1 / ( CNeighbor*P*CNeighbor.' + QgammaY) ) ;
+                dMahaAll(neighborIndex+1,j) = dMahaNeighbor ;
+            end     
+        end
+     end
     
 end
 
@@ -355,13 +415,13 @@ end
 % red dots are for neighbor magnets.
 
 figure; 
-plot( tMagnetDetection , dMahaAll(1,:) , 'bo' , 'LineWidth',2 ) ;
+plot( tLineDetection , dMahaAll(1,:) , 'bo' , 'LineWidth',2 ) ;
 for k = 2:5
     hold on; 
-    plot( tMagnetDetection , dMahaAll(k,:) , 'ro' , 'LineWidth',2 ) ;
+    plot( tLineDetection , dMahaAll(k,:) , 'ro' , 'LineWidth',2 ) ;
 end
 hold on;
-plot( tMagnetDetection , mahaThreshold*ones(1,size(dMahaAll,2)) , 'k' ,...
+plot( tLineDetection , mahaThreshold*ones(1,size(dMahaAll,2)) , 'k' ,...
     'LineWidth',2 ) ; 
 xlabel('t (s)');
 ylabel('Mahalanobis distance (no dimension).');
@@ -391,68 +451,63 @@ xlabel('t (s)')
 ylabel('theta (deg.)');
 zoom on ; grid on;
 
-% Determine the number of measurements (i.e. the number of detected magnets)
-% at each step. The idea is to show the students that, in most cases,
-% a single magnet is detected (or, of course, zero).
+% Determine the number of measurements (i.e. the number of sensor on a line)
+% at each step.
 
-i = 1 ;
-k = 0 ;
-tMeas  = zeros(1,nbPeriods) ;
-nbMeas = zeros(1,nbPeriods) ;
-while i <= length(t)
-    k = k+1 ;
-    tMeas(k) = t(i) ;
-    nbMeas(k) = 0 ;
-    j = 1 ;
-    while (i+j)<=length(t) && t(i+j)==t(i)
-        if y1(i+j) ~= 0 
-            nbMeas(k) = nbMeas(k)+1 ;
-        end
-        j = j+1 ;
+for time=1:length(treal)
+    Mesures=0;
+    for sensor = 1:nbSensors
+        Mesures=Mesures+sensorState(time,sensor);
     end
-    i = i+j ;
+    nbMeas(time)=Mesures;
 end
 
 % Plot number of measurements at each time step.
 
 figure; 
-plot(tMeas,nbMeas,'o' , 'LineWidth', 2 ) ;
+plot(treal,nbMeas,'o' , 'LineWidth', 2 ) ;
 xlabel('time (s)');
 %yticks([0 1 2]);
-title('Number of magnets detected at each step.');
+title('Number of lines detected at each step.');
 zoom on; grid on;
 
 
 % Plot raw sensor measurements
-rawMeas = zeros( nbReedSensors , nbPeriods ) ;
+rawMeas = zeros( nbSensors , nbPeriods ) ;
 for k = 1 : nbPeriods
-    rawMeas( : , k ) = bitget( sensorReadings(k) , 1:8 ) ;
+    rawMeas( : , k ) = sensorState(k,:) ;
 end
 figure; 
-for n = 1 : nbReedSensors
+for n = 1 : nbSensors
     for k = 1 : nbPeriods
-        if rawMeas(n,k) == 0
+        if rawMeas(n,k) == 1
             hold on ;
             line([travDistance(k) travDistance(k)],[n-0.5 n+0.5],'Color','b','LineStyle','-' , 'LineWidth', 2 );
         end
     end
 end
-set(gca,'YLim',[0 nbReedSensors+1]) ;
+set(gca,'YLim',[0 nbSensors+1]) ;
 xlabel('Travelled distance of point M (mm)');
-ylabel('Reed sensor number') ;
-title('State of Reed sensors (blue = magnet dectected)') ;
+ylabel('Sensor number') ;
+title('State of sensors (blue = line dectected)') ;
 zoom on; grid on;
 
-% Calculate and display odometry error (assuming KF is right).
+% Calculate and display odometry error.
 
 fprintf('\nTotal travelled distance: %d mm\n',round(sum(abs(U1))));
 fprintf('Final odometry error: %3.1f %%\n\n', ...
-    (norm([x(size(x,1));y(size(y,1))]-Xodo(1:2,size(Xodo,2))) / sum(abs(U1)) )*100 );
+    (norm([xreal(size(xreal,1));yreal(size(yreal,1))]-Xodo(1:2,size(Xodo,2))) / sum(abs(U1)) )*100 );
 
-% Calculate percentage of rejected closest magnets:
+% Calculate and display KF error.
 
-fprintf('Magnets rejected: %3.1f %%\n', ...
+fprintf('\nTotal travelled distance: %d mm\n',round(sum(abs(U1))));
+fprintf('Final KF error: %3.1f %%\n\n', ...
+    (norm([xreal(size(xreal,1));yreal(size(yreal,1))]-X(1:2,size(X,2))) / sum(abs(U1)) )*100 );
+
+% Calculate percentage of rejected closest lines:
+
+fprintf('Lines rejected: %3.1f %%\n', ...
     100*numel(find(dMahaAll(1,:) > mahaThreshold ))/numel(dMahaAll(1,:)));
 
-fprintf('Neighbor magnets under threshold: %3.1f %%\n\n', ...
+fprintf('Neighbor lines under threshold: %3.1f %%\n\n', ...
     100*numel(find(dMahaAll(2:5,:) <= mahaThreshold ))/numel(dMahaAll(2:5,:))) ;
