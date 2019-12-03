@@ -39,9 +39,9 @@ qL = round(qL*rad2dots)*dots2rad ;
 %nbWhites = [0 0] ;
 %nbBlacks = [0 0];
 
-sensorState = zeros( length(treal) , nbLineDetectors ) ;
+sensorState = zeros( length(treal) , nbSensors ) ;
 for i = 1 : nbSamples
-    for j = 1 : nbLineDetectors
+    for j = 1 : nbSensors
         oTm = [ cos(thetareal(i))  ,  -sin(thetareal(i))  ,  xreal(i)  ;
                 sin(thetareal(i))  ,   cos(thetareal(i))  ,  yreal(i)  ; 
                       0        ,         0        ,    1   ] ;
