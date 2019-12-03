@@ -11,19 +11,16 @@
 % clear all; close all; MagnetLoc; PlotResults;
 % -----
 % Project history:
-%    - Project initiator and principle of the sensor: Gaëtan Garcia
-%    - Sensor manufacturing and test: Joël Rousseau.
+%    - Project initiator and principle of the sensor: GaÃ«tan Garcia
+%    - Sensor manufacturing and test: JoÃ«l Rousseau.
 %    - Characterization of the sensor: EMARO1/ARIA1 project, Hendry Chame
-% and Marcelo Gaudenzi de Faria. Supervision: Gaëtan Garcia
+% and Marcelo Gaudenzi de Faria. Supervision: GaÃ«tan Garcia
 %    - First implementation (Matlab): EMARO1/ARIA1 project, Filip Cichosz
-% and Marteen Samuel. Supervision: Gaëtan Garcia.
-%    - This program (using Samuel and Cichosz's work): Gaëtan Garcia
+% and Marteen Samuel. Supervision: GaÃ«tan Garcia.
+%    - This program (using Samuel and Cichosz's work): GaÃ«tan Garcia
 
 RobotAndSensorDefinition ;
 DefineVariances ;
-
-X = [ xreal(1), yreal(1), atan2( (yreal(2)-yreal(1)) , (xreal(2)-xreal(1)) ) ].' ;%position intiale
-%pour l'instant on prend la vraie position initiale
 
 %Load the data file
 dataFile = uigetfile('*.mat','Select data file') ;
@@ -32,6 +29,9 @@ if isunix
 else
     load(dataFile);
 end
+
+X = [ xreal(1), yreal(1), atan2( (yreal(2)-yreal(1)) , (xreal(2)-xreal(1)) ) ].' ;%position intiale
+%pour l'instant on prend la vraie position initiale
 
 P = Pinit ; 
 
@@ -64,6 +64,7 @@ for i = 2 : length(treal)
     A = [ 1 0 -U(1)*sin(X(3));
           0 1 U(1)*cos(X(3)) ;
           0  0   1] ;
+      
     B = [ cos(X(3)) 0;
           sin(X(3)) 0;
           0 1] ;
@@ -73,31 +74,25 @@ for i = 2 : length(treal)
     
     LogData( t , 'prediction' , X , P , U , [0;0] ) ;
     
-    % Vector of measurements. Size is zero if no magnet was detected.
-
+    % Vector of sensor data at time t
     measures = sensorState(i,:) ; 
             
 
     for measNumber = 1 : length(measures) 
-        if measures(measNumber)==1 
+        if measures(measNumber)==lineDetected 
             % Homogeneous transform of robot frame with respect to world frame
             oTm = [ cos(X(3)) -sin(X(3)) X(1);
                     sin(X(3))  cos(X(3)) X(2);
                     0   0   1] ;
-            mTo = inv(oTm) ;
-
-            % Measurement vector: coordinates of the sensor in Rm.
-            Y = mSensors(1:2,measNumber);
 
             % Now in homogeneous coordinates for calculations.
             mMeasSensor = mSensors(:,measNumber);
 
             % Corresponding position in absolute frame. 
-            
+            oMeasSensor = oTm * mMeasSensor ;            
             
             %on determine si x ou y est le plus proche d'un multiple de la
             %taille des carreaux
-            oMeasSensor = oTm * mMeasSensor ;
             oMeasSensorNormalized=oMeasSensor./[xSpacing;ySpacing;1];
             oMeasSensorNormalized=mod(oMeasSensorNormalized,[1,1,1]);
             if oMeasSensorNormalized(1)>0.5
@@ -110,8 +105,8 @@ for i = 2 : length(treal)
             if oMeasSensorNormalized(1)<oMeasSensorNormalized(2) %une verticale est plus proche qu'une horizontale 
                 
                 % Due to measurement and localization errors, the previously calculated
-                % position does not match an actual magnet.
-                % Which actual magnet is closest? It will be the candidate magnet for
+                % position does not match an vetical line.
+                % Which actual vertical line is closest? It will be the candidate line for
                 % the update phase of the state estimator.
                 oRealSensor=oMeasSensor;
                 oRealSensor(1) = round(oMeasSensor(1)/xSpacing)*xSpacing ;
@@ -120,27 +115,30 @@ for i = 2 : length(treal)
                 % be different from the measured one. 
                 mRealSensor = oTm \ oRealSensor ;  % That's inv(oTm)*oRealMagnet = mTo*oRealMagnet
 
-                % The expected measurement are the two coordinates of the real 
-                % magnet in the robot frame.
-                Yhat = mRealSensor(1:2) ;
+                % Measure: x coordinate of the sensor in Rm.
+                Y = mSensors(1,measNumber);
 
-                C = [ 1 0 -mSensors(measNumber,1)*sin(X(3))-mSensors(measNumber,2)*cos(X(3))];
+                % The expected measurement is the x coordinate of the real 
+                % line in the robot frame.
+                Yhat = mRealSensor(1) ;
+
+                C = [ 1 0 -mSensors(1,measNumber)*sin(X(3))-mSensors(2,measNumber)*cos(X(3))];
 
                 innov = Y - Yhat ;   
-                dMaha = sqrt( innov(1) / ( C*P*C.' + Qgamma(1,1)) * innov(1) ) ;
-                LogData( t , 'measurement' , X , P , [0;0] , Y ) ;
+                dMaha = innov * sqrt( 1 / ( C*P*C.' + QgammaX) ) ;
+                LogData( t , 'measurement' , X , P , [0;0] , mSensors(1:2,measNumber) ) ;
 
                 if dMaha <= mahaThreshold
-                    K = P * C.' * inv( C*P*C.' + Qgamma(1,1)) ;
-                    X = X + K*innov(1) ;
+                    K = 1/( C*P*C.' + QgammaX) * P * C.'  ;
+                    X = X + innov.*K ;
                     P = (eye(length(X)) - K*C) * P ;
                     LogData( t , 'update' , X , P , [0;0] , [0;0] ) ;
                 end
             else %ligne horizontale
                 
-                % Due to measurement and localization errors, the previously calculated
-                % position does not match an actual magnet.
-                % Which actual magnet is closest? It will be the candidate magnet for
+               % Due to measurement and localization errors, the previously calculated
+                % position does not match an vetical line.
+                % Which actual vertical line is closest? It will be the candidate line for
                 % the update phase of the state estimator.
                 oRealSensor=oMeasSensor;
                 oRealSensor(2) = round(oMeasSensor(2)/ySpacing)*ySpacing ;
@@ -149,19 +147,22 @@ for i = 2 : length(treal)
                 % be different from the measured one. 
                 mRealSensor = oTm \ oRealSensor ;  % That's inv(oTm)*oRealMagnet = mTo*oRealMagnet
 
-                % The expected measurement are the two coordinates of the real 
-                % magnet in the robot frame.
-                Yhat = mRealSensor(1:2) ;
+                % Measure: x coordinate of the sensor in Rm.
+                Y = mSensors(2,measNumber);
 
-                C = [ 0 1 mSensors(measNumber,1)*cos(X(3))-mSensors(measNumber,2)*sin(X(3))];
+                % The expected measurement is the x coordinate of the real 
+                % line in the robot frame.
+                Yhat = mRealSensor() ;
+
+                C = [ 0 1 mSensors(1,measNumber)*cos(X(3))-mSensors(2,measNumber)*sin(X(3))];
 
                 innov = Y - Yhat ;   
-                dMaha = sqrt( innov(2) / ( C*P*C.' + Qgamma(2,2)) * innov(2) ) ;
-                LogData( t , 'measurement' , X , P , [0;0] , Y ) ;
+                dMaha = abs(innov) * sqrt( 1 / ( C*P*C.' + QgammaY) ) ;
+                LogData( t , 'measurement' , X , P , [0;0] , mSensors(1:2,measNumber) ) ;
 
                 if dMaha <= mahaThreshold
-                    K = P * C.' * inv( C*P*C.' + Qgamma(2,2)) ;
-                    X = X + K*innov(2) ;
+                    K = 1/( C*P*C.' + QgammaY) * P * C.'  ;
+                    X = X + innov.*K ;
                     P = (eye(length(X)) - K*C) * P ;
                     LogData( t , 'update' , X , P , [0;0] , [0;0] ) ;
                 end
@@ -177,7 +178,7 @@ end
 save inputLog ...
      rwheel trackGauge encoderRes samplingPeriod ...
      xSpacing ySpacing  ...
-     U sensorState ...
+     nbSensors U sensorState ...
      Pinit Qgamma sigmaTuning Qbeta Qalpha mahaThreshold 
 
  
