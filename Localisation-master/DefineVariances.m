@@ -11,8 +11,12 @@ Pinit = diag( [sigmaX^2 sigmaY^2 sigmaTheta^2] ) ;
 
 % Measurement noise.
 
-sigmaXmeasurement = width/2 ;  % Determined by student 
-sigmaYmeasurement = width/2;
+%Constantes nécessaires au calcul
+T = 1/200 ; %Periode d echantillonage des capteurs
+Vmax = 2 ; %Vitesse maximale admissible par le robot. A verifier. Pour l'instant on l'estime a 2m/s
+
+sigmaXmeasurement = 1/sqrt(3)*(width/2+T*Vmax) ;  % Determined by student 
+sigmaYmeasurement = 1/sqrt(3)*(width/2+T*Vmax) ;
 %10/sqrt(12) ;  % Determined by student 
 Qgamma = diag( [sigmaXmeasurement^2 sigmaYmeasurement^2] ) ;
 
