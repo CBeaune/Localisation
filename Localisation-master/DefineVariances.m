@@ -3,15 +3,15 @@
 
 % Uncertainty on initial position of the robot.
 
-sigmaX     = 0;         % Determined by student 
-sigmaY     = 0;         % Determined by student 
-sigmaTheta = 0*pi/180 ;   % Determined by student 
+sigmaX     = 0.1;         % Determined by student 
+sigmaY     = 0.1;         % Determined by student 
+sigmaTheta = 0.1*pi/180 ;   % Determined by student 
 Pinit = diag( [sigmaX^2 sigmaY^2 sigmaTheta^2] ) ;
 
 
 % Measurement noise.
 
-%Constantes nécessaires au calcul
+%Constantes nÃ©cessaires au calcul
 T = samplingPeriod ; %Periode d echantillonage des capteurs
 Vmax = topRobotSpeed ; %Vitesse maximale admissible par le robot. A verifier. Pour l'instant on l'estime a 2m/s
 
@@ -23,7 +23,7 @@ Qgamma=diag([QgammaX,QgammaY]);
 
 % Input noise
 
-sigmaTuning = 0.4 ; 
+sigmaTuning = 0.0001 ; %0.4 a la base, 0.1 mieux, 0.01 encore mieux
 Qwheels = sigmaTuning^2 * eye(2) ;
 Qbeta   = jointToCartesian * Qwheels * jointToCartesian.' ; 
 
