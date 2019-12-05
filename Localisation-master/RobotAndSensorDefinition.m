@@ -11,7 +11,7 @@ encoderRes = 180  ;      % In dots per wheel rotation
 % encoder resolution by a certain factor.
 % Also, we use a lower sampling frequency
 
-samplingFrequency    = 20 ;
+samplingFrequency    = 200 ;
 samplingPeriod       = 1/samplingFrequency ;
 
 % The sensor is supposed to be orthogonal to axis Xm of the robot.
