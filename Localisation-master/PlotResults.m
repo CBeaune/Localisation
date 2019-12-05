@@ -145,9 +145,9 @@ ylabel('y (mm)');
 % On top of the path, indicate estimated and real magnet positions.
 
 hold on;
-plot( estLinePos(1,:), estLinePos(2,:) , 'g+' ) ;
+plot( estLinePos(1,:), estLinePos(2,:) , 'gx' ) ;
 hold on;
-plot( exactLinePos(1,:), exactLinePos(2,:) , 'k+' ) ;
+plot( exactLinePos(1,:), exactLinePos(2,:) , 'kx' ) ;
 hold on
 for i = 1 : length(exactLinePos(1,:))
     if mod(exactLinePos(1,i),xSpacing)==0
@@ -223,8 +223,8 @@ msigx     = zeros(1,length(t)) ;
 msigy     = zeros(1,length(t)) ;
 msigtheta = zeros(1,length(t)) ;
 for i = 1 : length(t)
-    m_Omega_o = [  cos(theta(i))  ,  sin(theta(i))  ,  0  ;
-                  -sin(theta(i))  ,  cos(theta(i))  ,  0  ;
+    m_Omega_o = [  cos(theta(i))  , -sin(theta(i))  ,  0  ; %changement de signe des sin 
+                   sin(theta(i))  ,  cos(theta(i))  ,  0  ;
                         0         ,       0         ,  1  ] ;
     oP = [ P11(i)  ,  P12(i)  ,  P13(i)  ;
            P12(i)  ,  P22(i)  ,  P23(i)  ;
@@ -327,7 +327,7 @@ for i = 1 : length(t)
         P = [ P11(i)  ,  P12(i)  ,  P13(i)  ;
               P12(i)  ,  P22(i)  ,  P23(i)  ;
               P13(i)  ,  P23(i)  ,  P33(i)  ] ;
-        dMaha = abs(innov) * sqrt( 1 / ( C*P*C.' + QgammaX) ) ;
+        dMaha = abs(innov) * sqrt( 1 / ( C*P*C.' + QgammaX) ); 
 
         dMahaAll(1,j)       = dMaha            ;
         estLinePos(:,j)   = oMeasSensor(1:2) ;
