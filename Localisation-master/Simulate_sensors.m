@@ -19,7 +19,7 @@ qR        = interp1 (tq, qRight, treal) ;
 qL        = interp1 (tq, qLeft , treal) ;
 xreal     = interp1 (tq, xq    , treal) ;
 yreal     = interp1 (tq, yq    , treal) ;
-thetareal = interp1 (tq, thetaq(1:size(tq)), treal) ; %truandage because thetaq is of wrong size
+thetareal = interp1 (tq, thetaq, treal) ;
 
 % Apply quantization noise on encoder values based on resolution
 qR = round(qR*rad2dots)*dots2rad ;
@@ -40,6 +40,7 @@ qL = round(qL*rad2dots)*dots2rad ;
 %nbBlacks = [0 0];
 
 sensorState = zeros( length(treal) , nbSensors ) ;
+figure;
 for i = 1 : nbSamples
     for j = 1 : nbSensors
         oTm = [ cos(thetareal(i))  ,  -sin(thetareal(i))  ,  xreal(i)  ;
@@ -52,10 +53,16 @@ for i = 1 : nbSamples
 	%checkboard floor
         % sensorState(i,j) = ~rem( floor(xs/xSpacing)+floor(ys/ySpacing) , 2 ) ;
 	%square floor with lines
-        sensorState(i,j) = abs( floor(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - ys )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - ys )<hwidth;
+        sensorState(i,j) = abs( floor(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(xs/xSpacing)*xSpacing - xs )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - ys )<hwidth | abs( ceil(ys/ySpacing)*ySpacing - ys )<hwidth; 
+        if sensorState(i,j)
+            plot(xs,ys,'g+') ;
+            hold on; 
+        else
+            plot(xs,ys,'r+') ;
+            hold on; 
+        end
     end
 end
-
 save simu dots2rad rad2dots rwheel trackGauge topRobotSpeed ...
           mSensors xSpacing ySpacing ...
           treal xreal yreal thetareal qR qL sensorState ;
