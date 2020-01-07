@@ -118,12 +118,12 @@ end
 
 % Compute odometry only estimated path
 Xodo(:,1) = [x(1) ; y(1) ; theta(1)] ;
-for i = 1 : nbPeriods
-    Xodo(:,i+1) = Xodo(:,i) + ...
-        [ U(1,i)*cos(Xodo(3,i)) ;
-          U(1,i)*sin(Xodo(3,i)) ;
-          U(2,i) ] ;
-end
+% for i = 1 : nbPeriods
+%     Xodo(:,i+1) = Xodo(:,i) + ...
+%         [ U(1,i)*cos(Xodo(3,i)) ;
+%           U(1,i)*sin(Xodo(3,i)) ;
+%           U(2,i) ] ;
+% end
 travDistance = zeros(1,nbPeriods) ;
 for i = 2 : nbPeriods
     travDistance(i) = travDistance(i-1) + U(1,i) ;
@@ -328,7 +328,6 @@ for i = 1 : length(t)
               P12(i)  ,  P22(i)  ,  P23(i)  ;
               P13(i)  ,  P23(i)  ,  P33(i)  ] ;
         dMaha = abs(innov) * sqrt( 1 / ( C*P*C.' + QgammaX) ); 
-
         dMahaAll(1,j)       = dMaha            ;
         estLinePos(:,j)   = oMeasSensor(1:2) ;
         exactLinePos(:,j) = oRealSensor(1:2) ;
@@ -377,8 +376,7 @@ for i = 1 : length(t)
               P12(i)  ,  P22(i)  ,  P23(i)  ;
               P13(i)  ,  P23(i)  ,  P33(i)  ] ;
         dMaha = abs(innov) * sqrt( 1 / ( C*P*C.' + QgammaY) ) ;
-
-        dMahaAll(1,j)       = dMaha            ;
+        dMahaAll(1,j)       = dMaha;
         estLinePos(:,j)   = oMeasSensor(1:2) ;
         exactLinePos(:,j) = oRealSensor(1:2) ;
 
