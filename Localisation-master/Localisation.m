@@ -11,13 +11,13 @@
 % clear all; close all; MagnetLoc; PlotResults;
 % -----
 % Project history:
-%    - Project initiator and principle of the sensor: GaÃ«tan Garcia
-%    - Sensor manufacturing and test: JoÃ«l Rousseau.
+%    - Project initiator and principle of the sensor: GaÃƒÂ«tan Garcia
+%    - Sensor manufacturing and test: JoÃƒÂ«l Rousseau.
 %    - Characterization of the sensor: EMARO1/ARIA1 project, Hendry Chame
-% and Marcelo Gaudenzi de Faria. Supervision: GaÃ«tan Garcia
+% and Marcelo Gaudenzi de Faria. Supervision: GaÃƒÂ«tan Garcia
 %    - First implementation (Matlab): EMARO1/ARIA1 project, Filip Cichosz
-% and Marteen Samuel. Supervision: GaÃ«tan Garcia.
-%    - This program (using Samuel and Cichosz's work): GaÃ«tan Garcia
+% and Marteen Samuel. Supervision: GaÃƒÂ«tan Garcia.
+%    - This program (using Samuel and Cichosz's work): GaÃƒÂ«tan Garcia
 
 RobotAndSensorDefinition ;
 DefineVariances ;
@@ -45,7 +45,6 @@ LogData( 0 , 'init' , X , P , [0;0] ) ;
 % set in RobotDefinition.m
 
 wbHandle = waitbar(0,'Computing...') ;
-
 for i = 2 : length(treal) 
     
     t = (i-1)*samplingPeriod ;
@@ -59,6 +58,9 @@ for i = 2 : length(treal)
     
     % Predic state (here odometry)
     X = EvolutionModel( X , U ) ;
+    X=X+rand(size(X))/50-ones(size(X))*0.01;
+    Xodo(:,i) = X;
+
     
     % Calculate linear approximation of the system equation
     A = [ 1 0 -U(1)*sin(X(3));
@@ -159,8 +161,10 @@ for i = 2 : length(treal)
                 innov = Y - Yhat ;   
                 dMaha = abs(innov) * sqrt( 1 / ( C*P*C.' + QgammaY) ) ;
                 LogData( t , 'measurement' , X , P , [0;0] , mSensors(1:2,measNumber) ) ;
-
-                if dMaha <= mahaThreshold
+                
+                cornerThreshold = 30*30;
+                dCorner = (X(1)-round(X(1)/xSpacing)*xSpacing)*(X(1)-round(X(1)/xSpacing)*xSpacing)+(X(2)-round(X(2)/ySpacing)*ySpacing)*(X(2)-round(X(2)/ySpacing)*ySpacing);
+                if ((dCorner >= cornerThreshold) & (dMaha<=mahaThreshold))
                     K = 1/( C*P*C.' + QgammaY) * P * C.'  ;
                     X = X + innov.*K ;
                     P = (eye(length(X)) - K*C) * P ;
