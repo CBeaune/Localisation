@@ -5,15 +5,15 @@
 
 % Robot characteristics
 
-rwheel           = 21.5 ;      % Wheel radius
-trackGauge       = 112  ;      % Distance between the fixed wheels
+rwheel           = 40 ;      % Wheel radius
+trackGauge       = 320  ;      % Distance between the fixed wheels
 encoderRes = 180  ;      % In dots per wheel rotation
 
 % To dumb down the robot's odometry, we artificially lower the
 % encoder resolution by a certain factor.
 % Also, we use a lower sampling frequency
 
-samplingFrequency    = 200 ;
+samplingFrequency    = 20 ;
 samplingPeriod       = 1/samplingFrequency ;
 
 % The sensor is supposed to be orthogonal to axis Xm of the robot.
@@ -21,7 +21,7 @@ samplingPeriod       = 1/samplingFrequency ;
 noLineDetected =  0   ;      % Bit value when no magnet is detected
 lineDetected   =  1   ;      % Bit value when a magnet is detected
 
-topRobotSpeed = 2000 ;
+topRobotSpeed = 1000 ;
 
 
 % Homogeneous coordinates of the line detector sensors in robot frame Rm.
@@ -31,7 +31,7 @@ topRobotSpeed = 2000 ;
 %s1   s2  ...
 
 mSensors = [  0   0  ;
-             50 -50  ;
+             70 -70  ;
               1   1  ] ;
 
 nbSensors = size(mSensors,2) ;                  
@@ -40,9 +40,9 @@ nbSensors = size(mSensors,2) ;
 % Line spacing   
 
 
-xSpacing = 300 ;
+xSpacing = 100 ;
 
-ySpacing = 300 ;
+ySpacing = 100 ;
 
 width = 5 ;
 
