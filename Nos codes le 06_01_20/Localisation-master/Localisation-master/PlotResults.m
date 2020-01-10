@@ -491,6 +491,61 @@ ylabel('Sensor number') ;
 title('State of sensors (blue = line dectected)') ;
 zoom on; grid on;
 
+
+% Plot errors in absolute frame.
+
+figure;
+subplot(3,1,1);
+xref=zeros(size(t));
+yref=zeros(size(t));
+thetaref=zeros(size(t));
+c=0;
+for i=1:length(t)
+    if calcPhase(i)==0 | calcPhase(i)==1
+        xref(i)=xreal(i-c);
+        yref(i)=yreal(i-c);
+        thetaref(i)=thetareal(i-c);
+    else
+        xref(i)=xref(i-1);
+        yref(i)=yref(i-1);
+        thetaref(i)=thetaref(i-1);
+        c=c+1;
+    end
+end
+plot( t,3*sigx,'k', 'LineWidth',1 );
+hold on;
+plot( t,-3*sigx,'k', 'LineWidth',1 );
+hold on;
+plot( t,x-xref ,'b', 'LineWidth',2 );
+hold on;
+xlabel('t (s)') ;
+ylabel('sigma_x (mm)');
+title('Error in absolute frame');
+zoom on ; grid on;
+
+subplot(3,1,2);
+plot( t,3*sigy,'k', 'LineWidth',1 );
+hold on;
+plot( t,-3*sigy,'k', 'LineWidth',1 );
+hold on;
+plot( t,y-yref ,'b', 'LineWidth',2 );
+hold on;
+xlabel('t (s)') ;
+ylabel('sigma_y (mm)');
+zoom on ; grid on;
+
+subplot(3,1,3);
+plot( t,3*sigtheta*180/pi ,'k', 'LineWidth',1 );
+hold on ;
+plot( t,-3*sigtheta*180/pi ,'k', 'LineWidth',1 );
+hold on ;
+plot( t,theta-thetaref ,'b', 'LineWidth',2 );
+hold on;
+xlabel('t (s)') ;
+ylabel('sigma_{theta} (deg.)');
+zoom on ; grid on;
+
+
 % Calculate and display odometry error.
 
 fprintf('\nTotal travelled distance: %d mm\n',round(sum(abs(U1))));
