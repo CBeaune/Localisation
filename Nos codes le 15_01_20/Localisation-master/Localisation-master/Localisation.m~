@@ -125,7 +125,7 @@ for i = 2 : length(treal)
                 Yhat = mRealSensor(1) ;
 
                 %C = [ 1 0 -mSensors(1,measNumber)*sin(X(3))-mSensors(2,measNumber)*cos(X(3))];
-                %change pour corriger le filtre le 15/01
+                %change pour corriger le filtre
                 C = [ 1 0 -X(1)*sin(X(3))-X(2)*cos(X(3))];
                 innov = Y - Yhat ;   
                 dMaha = innov * sqrt( 1 / ( C*P*C.' + QgammaX) ) ;
@@ -158,7 +158,6 @@ for i = 2 : length(treal)
                 Yhat = mRealSensor() ;
 
                 %C = [ 0 1 mSensors(1,measNumber)*cos(X(3))-mSensors(2,measNumber)*sin(X(3))];
-                %change pour corriger le filtre le 15/01
                 C = [ 0 1 X(1)*cos(X(3))-X(2)*sin(X(3))];
                 innov = Y - Yhat ;   
                 dMaha = abs(innov) * sqrt( 1 / ( C*P*C.' + QgammaY) ) ;
